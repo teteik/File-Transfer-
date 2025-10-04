@@ -1,3 +1,4 @@
+// common/Protocol.java
 package common;
 
 import java.io.*;
@@ -6,8 +7,7 @@ import java.nio.charset.StandardCharsets;
 public class Protocol {
 
     public static void sendFileName(OutputStream out, String fileName) throws IOException {
-        BufferedOutputStream bufferedOut = new BufferedOutputStream(out);
-        DataOutputStream dataOut = new DataOutputStream(bufferedOut);
+        DataOutputStream dataOut = new DataOutputStream(out);
         byte[] fileNameBytes = fileName.getBytes(StandardCharsets.UTF_8);
         dataOut.writeInt(fileNameBytes.length);
         dataOut.write(fileNameBytes);
@@ -15,8 +15,7 @@ public class Protocol {
     }
 
     public static String readFileName(InputStream in) throws IOException {
-        BufferedInputStream bufferedIn = new BufferedInputStream(in);
-        DataInputStream dataIn = new DataInputStream(bufferedIn);
+        DataInputStream dataIn = new DataInputStream(in);
         int fileNameLength = dataIn.readInt();
         byte[] fileNameBytes = new byte[fileNameLength];
         dataIn.readFully(fileNameBytes);
@@ -24,15 +23,13 @@ public class Protocol {
     }
 
     public static void sendFileSize(OutputStream out, long fileSize) throws IOException {
-        BufferedOutputStream bufferedOut = new BufferedOutputStream(out);
-        DataOutputStream dataOut = new DataOutputStream(bufferedOut);
+        DataOutputStream dataOut = new DataOutputStream(out);
         dataOut.writeLong(fileSize);
         dataOut.flush();
     }
 
     public static long readFileSize(InputStream in) throws IOException {
-        BufferedInputStream bufferedIn = new BufferedInputStream(in);
-        DataInputStream dataIn = new DataInputStream(bufferedIn);
+        DataInputStream dataIn = new DataInputStream(in);
         return dataIn.readLong();
     }
 
@@ -40,12 +37,10 @@ public class Protocol {
         try (BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buffer = new byte[8192];
             int bytesRead;
-
             while ((bytesRead = fileIn.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
             }
             out.flush();
-
         }
     }
 
@@ -55,14 +50,12 @@ public class Protocol {
             parentDir.mkdirs();
         }
 
-        try (BufferedInputStream bufferedIn = new BufferedInputStream(in);
-             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-
+        try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) {
             byte[] buffer = new byte[8192];
             long totalBytesRead = 0;
             int bytesRead;
 
-            while (totalBytesRead < expectedFileSize && (bytesRead = bufferedIn.read(buffer)) != -1) {
+            while (totalBytesRead < expectedFileSize && (bytesRead = in.read(buffer)) != -1) {
                 long bytesToWrite = Math.min(bytesRead, expectedFileSize - totalBytesRead);
                 fileOut.write(buffer, 0, (int) bytesToWrite);
                 totalBytesRead += bytesToWrite;
@@ -70,5 +63,16 @@ public class Protocol {
 
             fileOut.flush();
         }
+    }
+
+    public static void sendResult(OutputStream out, boolean success) throws IOException {
+        DataOutputStream dataOut = new DataOutputStream(out);
+        dataOut.writeBoolean(success);
+        dataOut.flush();
+    }
+
+    public static boolean readResult(InputStream in) throws IOException {
+        DataInputStream dataIn = new DataInputStream(in);
+        return dataIn.readBoolean();
     }
 }
