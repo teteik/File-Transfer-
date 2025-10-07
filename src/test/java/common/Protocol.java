@@ -1,10 +1,12 @@
-// common/Protocol.java
 package common;
+
+import utils.SpeedMonitor;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class Protocol {
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
 
     public static void sendFileName(OutputStream out, String fileName) throws IOException {
         DataOutputStream dataOut = new DataOutputStream(out);
@@ -19,6 +21,7 @@ public class Protocol {
         int fileNameLength = dataIn.readInt();
         byte[] fileNameBytes = new byte[fileNameLength];
         dataIn.readFully(fileNameBytes);
+
         return new String(fileNameBytes, StandardCharsets.UTF_8);
     }
 
@@ -35,7 +38,7 @@ public class Protocol {
 
     public static void sendFile(OutputStream out, File file) throws IOException {
         try (BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(file))) {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = fileIn.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
@@ -44,14 +47,16 @@ public class Protocol {
         }
     }
 
-    public static void receiveFile(InputStream in, File outputFile, long expectedFileSize) throws IOException {
+    public static void readFile(InputStream in, File outputFile, long expectedFileSize, SpeedMonitor speedMonitor) throws IOException {
         File parentDir = outputFile.getParentFile();
-        if (parentDir != null) {
-            parentDir.mkdirs();
+        if (parentDir != null && !parentDir.exists()) {
+            if (!parentDir.mkdirs()) {
+                throw new IOException("Failed to create directory: " + parentDir.getAbsolutePath());
+            }
         }
 
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             long totalBytesRead = 0;
             int bytesRead;
 
@@ -59,6 +64,8 @@ public class Protocol {
                 long bytesToWrite = Math.min(bytesRead, expectedFileSize - totalBytesRead);
                 fileOut.write(buffer, 0, (int) bytesToWrite);
                 totalBytesRead += bytesToWrite;
+
+                speedMonitor.addBytes(bytesToWrite);
             }
 
             fileOut.flush();
