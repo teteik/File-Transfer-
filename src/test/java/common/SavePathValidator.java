@@ -22,7 +22,6 @@ public class SavePathValidator {
             throw new IllegalArgumentException("Invalid file name: " +
                     "attempt to move outside the uploads directory");
         }
-
         return targetPath.toFile();
     }
 }

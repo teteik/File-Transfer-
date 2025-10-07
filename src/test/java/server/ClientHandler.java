@@ -11,10 +11,12 @@ import java.net.Socket;
 public class ClientHandler implements Runnable {
     private final Socket socket;
     private final SpeedMonitor speedMonitor;
+    private final Protocol protocol;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
-        this.speedMonitor = new SpeedMonitor(socket.getInetAddress().toString());
+        this.protocol = new Protocol();
+        this.speedMonitor = new SpeedMonitor(socket.getInetAddress().toString(), protocol);
     }
 
     @Override
@@ -23,15 +25,16 @@ public class ClientHandler implements Runnable {
         try (InputStream in = socket.getInputStream();
              OutputStream out = socket.getOutputStream()) {
 
-            String fileName = Protocol.readFileName(in);
+            String fileName = protocol.readFileName(in);
             System.out.println("Получено имя файла: " + fileName);
 
-            long fileSize = Protocol.readFileSize(in);
+            long fileSize = protocol.readFileSize(in);
             System.out.println("Ожидаемый размер файла: " + fileSize + " байт");
 
             File targetFile = SavePathValidator.validateAndResolve(fileName, "uploads");
 
-            Protocol.readFile(in, targetFile, fileSize, speedMonitor);
+            protocol.readFile(in, targetFile, fileSize);
+            speedMonitor.shutdown();
 
             long actualSize = targetFile.length();
             success = actualSize == fileSize;
@@ -43,11 +46,10 @@ public class ClientHandler implements Runnable {
                 targetFile.delete();
             }
 
-            Protocol.sendResult(out, success);
+            protocol.sendResult(out, success);
         } catch (Exception e) {
             System.err.println("Ошибка при обработке клиента: " + e.getMessage());
         } finally {
-            speedMonitor.shutdown();
             try {
                 socket.close();
             } catch (IOException ignored) {}

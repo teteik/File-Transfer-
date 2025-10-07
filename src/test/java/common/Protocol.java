@@ -6,9 +6,11 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class Protocol {
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private final int DEFAULT_BUFFER_SIZE = 8192;
+    private long totalBytesRead = 0;
 
-    public static void sendFileName(OutputStream out, String fileName) throws IOException {
+
+    public void sendFileName(OutputStream out, String fileName) throws IOException {
         DataOutputStream dataOut = new DataOutputStream(out);
         byte[] fileNameBytes = fileName.getBytes(StandardCharsets.UTF_8);
         dataOut.writeInt(fileNameBytes.length);
@@ -16,7 +18,7 @@ public class Protocol {
         dataOut.flush();
     }
 
-    public static String readFileName(InputStream in) throws IOException {
+    public String readFileName(InputStream in) throws IOException {
         DataInputStream dataIn = new DataInputStream(in);
         int fileNameLength = dataIn.readInt();
         byte[] fileNameBytes = new byte[fileNameLength];
@@ -25,18 +27,18 @@ public class Protocol {
         return new String(fileNameBytes, StandardCharsets.UTF_8);
     }
 
-    public static void sendFileSize(OutputStream out, long fileSize) throws IOException {
+    public void sendFileSize(OutputStream out, long fileSize) throws IOException {
         DataOutputStream dataOut = new DataOutputStream(out);
         dataOut.writeLong(fileSize);
         dataOut.flush();
     }
 
-    public static long readFileSize(InputStream in) throws IOException {
+    public long readFileSize(InputStream in) throws IOException {
         DataInputStream dataIn = new DataInputStream(in);
         return dataIn.readLong();
     }
 
-    public static void sendFile(OutputStream out, File file) throws IOException {
+    public void sendFile(OutputStream out, File file) throws IOException {
         try (BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int bytesRead;
@@ -47,7 +49,7 @@ public class Protocol {
         }
     }
 
-    public static void readFile(InputStream in, File outputFile, long expectedFileSize, SpeedMonitor speedMonitor) throws IOException {
+    public void readFile(InputStream in, File outputFile, long expectedFileSize) throws IOException {
         File parentDir = outputFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
             if (!parentDir.mkdirs()) {
@@ -57,29 +59,30 @@ public class Protocol {
 
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-            long totalBytesRead = 0;
             int bytesRead;
 
             while (totalBytesRead < expectedFileSize && (bytesRead = in.read(buffer)) != -1) {
                 long bytesToWrite = Math.min(bytesRead, expectedFileSize - totalBytesRead);
                 fileOut.write(buffer, 0, (int) bytesToWrite);
                 totalBytesRead += bytesToWrite;
-
-                speedMonitor.addBytes(bytesToWrite);
             }
 
             fileOut.flush();
         }
     }
 
-    public static void sendResult(OutputStream out, boolean success) throws IOException {
+    public void sendResult(OutputStream out, boolean success) throws IOException {
         DataOutputStream dataOut = new DataOutputStream(out);
         dataOut.writeBoolean(success);
         dataOut.flush();
     }
 
-    public static boolean readResult(InputStream in) throws IOException {
+    public boolean readResult(InputStream in) throws IOException {
         DataInputStream dataIn = new DataInputStream(in);
         return dataIn.readBoolean();
+    }
+
+    public long getTotalBytesRead() {
+        return totalBytesRead;
     }
 }

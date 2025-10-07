@@ -28,17 +28,18 @@ public class FileTransferClient {
         try (Socket socket = new Socket(serverHost, serverPort);
              OutputStream out = socket.getOutputStream();
              InputStream in = socket.getInputStream()) {
-            
-            Protocol.sendFileName(out, file.getName());
+            Protocol protocol = new Protocol();
+
+            protocol.sendFileName(out, file.getName());
             System.out.println("Отправлено имя файла: " + file.getName());
 
-            Protocol.sendFileSize(out, file.length());
+            protocol.sendFileSize(out, file.length());
             System.out.println("Отправлен размер файла: " + file.length() + " байт");
 
-            Protocol.sendFile(out, file);
+            protocol.sendFile(out, file);
             System.out.println("Файл отправлен.");
 
-            boolean success = Protocol.readResult(in);
+            boolean success = protocol.readResult(in);
 
             if (success) {
                 System.out.println("Передача файла успешна.");
