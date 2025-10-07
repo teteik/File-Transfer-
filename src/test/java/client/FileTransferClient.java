@@ -21,33 +21,29 @@ public class FileTransferClient {
     public void sendFile() {
         File file = new File(filePath);
         if (!file.exists() || !file.isFile()) {
-            System.err.println("Файл не существует или не является файлом: " + filePath);
+            System.err.println("Файл не существует: " + filePath);
             return;
         }
 
         try (Socket socket = new Socket(serverHost, serverPort);
              OutputStream out = socket.getOutputStream();
              InputStream in = socket.getInputStream()) {
-
-            // Отправляем имя файла
+            
             Protocol.sendFileName(out, file.getName());
             System.out.println("Отправлено имя файла: " + file.getName());
 
-            // Отправляем размер файла
             Protocol.sendFileSize(out, file.length());
             System.out.println("Отправлен размер файла: " + file.length() + " байт");
 
-            // Отправляем содержимое файла
             Protocol.sendFile(out, file);
             System.out.println("Файл отправлен.");
 
-            // Ждём результат
             boolean success = Protocol.readResult(in);
 
             if (success) {
-                System.out.println("✅ Передача файла успешна.");
+                System.out.println("Передача файла успешна.");
             } else {
-                System.err.println("❌ Передача файла не удалась.");
+                System.err.println("Передача файла не удалась.");
             }
 
         } catch (UnknownHostException e) {
