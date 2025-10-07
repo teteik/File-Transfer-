@@ -23,21 +23,16 @@ public class ClientHandler implements Runnable {
         try (InputStream in = socket.getInputStream();
              OutputStream out = socket.getOutputStream()) {
 
-            // Читаем имя файла
             String fileName = Protocol.readFileName(in);
             System.out.println("Получено имя файла: " + fileName);
 
-            // Читаем размер файла
             long fileSize = Protocol.readFileSize(in);
             System.out.println("Ожидаемый размер файла: " + fileSize + " байт");
 
-            // Валидируем и получаем целевой файл
             File targetFile = SavePathValidator.validateAndResolve(fileName, "uploads");
 
-            // Получаем файл
-            Protocol.receiveFile(in, targetFile, fileSize);
+            Protocol.readFile(in, targetFile, fileSize, speedMonitor);
 
-            // Проверяем размер
             long actualSize = targetFile.length();
             success = actualSize == fileSize;
 
@@ -45,17 +40,17 @@ public class ClientHandler implements Runnable {
                 System.out.println("Файл '" + fileName + "' успешно сохранён.");
             } else {
                 System.err.println("Ошибка: ожидаемый размер " + fileSize + ", получен " + actualSize);
-                targetFile.delete(); // удаляем повреждённый файл
+                targetFile.delete();
             }
 
-            // Отправляем результат клиенту
             Protocol.sendResult(out, success);
-
-            // Выводим финальную скорость, если клиент был активен менее 3 секунд
-            speedMonitor.printSpeed();
-
         } catch (Exception e) {
             System.err.println("Ошибка при обработке клиента: " + e.getMessage());
+        } finally {
+            speedMonitor.shutdown();
+            try {
+                socket.close();
+            } catch (IOException ignored) {}
         }
     }
 }
