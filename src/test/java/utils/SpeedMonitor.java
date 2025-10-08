@@ -7,16 +7,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class SpeedMonitor {
-    private static final long MILLIS = 3000L;
-    private static final long SECONDS = MILLIS / 1000;
+    private static final double MIN_REPORT_INTERVAL_NANOS = 3_000_000_000.0;
+    private static final double MIN_REPORT_INTERVAL_SECONDS = MIN_REPORT_INTERVAL_NANOS / 1_000_000_000;
     private static final double BYTES_IN_KB = 1024.0;
-    private static final long MIN_REPORT_INTERVAL_MILLIS = MILLIS;
     private static final String THREAD_NAME_FORMAT = "SpeedMonitor-%s";
     private static final String INSTANT_SPEED_FORMAT = "[Клиент %s] Скорость: %.2f КБ/с%n";
     private static final String AVERAGE_SPEED_FORMAT = "[Клиент %s] Передача завершена. Средняя скорость: %.2f КБ/с%n";
 
     private long lastReportedBytes = 0;
-    private final long startTime = System.currentTimeMillis();
+    private final long startTimeNanos = System.nanoTime();
     private final String clientName;
     private final ScheduledExecutorService scheduler;
     private final Protocol protocol;
@@ -34,9 +33,9 @@ public class SpeedMonitor {
     }
 
     private void printInstantSpeed() {
-        long now = System.currentTimeMillis();
-        long elapsedSinceStart = now - startTime;
-        if (elapsedSinceStart < MIN_REPORT_INTERVAL_MILLIS) {
+        double now = System.nanoTime();
+        double elapsedSinceStart = now - startTimeNanos;
+        if (elapsedSinceStart < MIN_REPORT_INTERVAL_NANOS) {
             return;
         }
 
@@ -45,18 +44,17 @@ public class SpeedMonitor {
 
         System.out.printf(INSTANT_SPEED_FORMAT,
                 clientName,
-                (double) diff / (BYTES_IN_KB * SECONDS));
+                (double) diff / (BYTES_IN_KB * MIN_REPORT_INTERVAL_SECONDS));
 
         lastReportedBytes = currentTotal;
     }
 
     public void shutdown() {
         scheduler.shutdown();
-        long totalTimeMillis = System.currentTimeMillis() - startTime;
+        double totalTimeMillis = System.nanoTime() - startTimeNanos;
 
-        double millisInSeconds = 1000;
-        double avgSpeedBytesPerMilli = (double) protocol.getTotalBytesRead() / totalTimeMillis;
-        double avgSpeedBytesPerSecond = avgSpeedBytesPerMilli ;//* millisInSeconds;
+        double NanosInSeconds = 1000_000_000;
+        double avgSpeedBytesPerSecond = NanosInSeconds * protocol.getTotalBytesRead() / totalTimeMillis;
 
         System.out.printf(AVERAGE_SPEED_FORMAT,
                 clientName,
