@@ -1,7 +1,5 @@
 package common;
 
-import utils.SpeedMonitor;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
@@ -61,8 +59,9 @@ public class Protocol {
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int bytesRead;
+            BufferedInputStream fileIn = new BufferedInputStream(in);
 
-            while (totalBytesRead < expectedFileSize && (bytesRead = in.read(buffer)) != -1) {
+            while (totalBytesRead < expectedFileSize && (bytesRead = fileIn.read(buffer)) != -1) {
                 long bytesToWrite = Math.min(bytesRead, expectedFileSize - totalBytesRead);
                 fileOut.write(buffer, 0, (int) bytesToWrite);
                 totalBytesRead += bytesToWrite;

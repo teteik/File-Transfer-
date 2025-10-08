@@ -51,10 +51,10 @@ public class SpeedMonitor {
 
     public void shutdown() {
         scheduler.shutdown();
-        double totalTimeMillis = System.nanoTime() - startTimeNanos;
+        double totalTimeNanos = System.nanoTime() - startTimeNanos;
 
         double NanosInSeconds = 1000_000_000;
-        double avgSpeedBytesPerSecond = NanosInSeconds * protocol.getTotalBytesRead() / totalTimeMillis;
+        double avgSpeedBytesPerSecond = NanosInSeconds * protocol.getTotalBytesRead() / totalTimeNanos;
 
         System.out.printf(AVERAGE_SPEED_FORMAT,
                 clientName,
