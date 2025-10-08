@@ -40,12 +40,13 @@ public class Protocol {
 
     public void sendFile(OutputStream out, File file) throws IOException {
         try (BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(file))) {
+            BufferedOutputStream bufOut = new BufferedOutputStream(out);
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = fileIn.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
+                bufOut.write(buffer, 0, bytesRead);
             }
-            out.flush();
+            bufOut.flush();
         }
     }
 
