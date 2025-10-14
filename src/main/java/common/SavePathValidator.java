@@ -22,6 +22,39 @@ public class SavePathValidator {
             throw new IllegalArgumentException("Invalid file name: " +
                     "attempt to move outside the uploads directory");
         }
-        return targetPath.toFile();
+
+        File targetFile = targetPath.toFile();
+        targetFile = getUniqueFile(targetFile);
+
+        return targetFile;
+    }
+
+    private static File getUniqueFile(File originalFile) {
+        if (!originalFile.exists()) {
+            return originalFile;
+        }
+
+        File parentDir = originalFile.getParentFile();
+        String fileName = originalFile.getName();
+        String nameWithoutExt = fileName;
+        String extension = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+
+        if (lastDotIndex > 0) {
+            nameWithoutExt = fileName.substring(0, lastDotIndex);
+            extension = fileName.substring(lastDotIndex);
+        }
+
+        int counter = 1;
+        String newName = nameWithoutExt + "(" + counter + ")" + extension;
+        File newFile = new File(parentDir, newName);
+
+        while (newFile.exists()) {
+            counter++;
+            newName = nameWithoutExt + "(" + counter + ")" + extension;
+            newFile = new File(parentDir, newName);
+        }
+
+        return newFile;
     }
 }
