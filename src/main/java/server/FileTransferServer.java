@@ -1,4 +1,3 @@
-// server/FileTransferServer.java
 package server;
 
 import java.io.*;
